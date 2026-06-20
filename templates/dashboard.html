@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Concept Check - Dashboard</title>
+    <style>
+        body { font-family: Arial, max-width: 800px; margin: 20px auto; padding: 20px; }
+        .concepts { margin-top: 30px; }
+        .concept { padding: 15px; border: 1px solid #ddd; margin: 10px 0; cursor: pointer; }
+        .concept:hover { background: #f5f5f5; }
+        .sessions { margin-top: 30px; }
+        .session { padding: 10px; background: #f9f9f9; margin: 5px 0; cursor: pointer; }
+        .session:hover { background: #eef3ff; }
+        .button { display: inline-block; padding: 10px 16px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Concept Check - Dashboard</h1>
+    <p>Welcome, {{ learner.name }} ({{ learner.email }})</p>
+
+    <div class="concepts">
+        <h2>Choose a Concept to Derive</h2>
+        {% for concept in concepts %}
+        <div class="concept" onclick="startSession({{ concept.concept_id }})">
+            <strong>{{ concept.topic_name }}</strong>
+            <p>{{ concept.description }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="sessions">
+        <h3>Your Sessions</h3>
+        {% for session in sessions %}
+        <div class="session" onclick="viewSession('{{ session.session_id }}')">
+            <strong>Session {{ session.session_id }}</strong> - {{ session.started_at }}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div style="margin-top: 20px;">
+        <a href="/logout" class="button">Logout</a>
+    </div>
+
+    <script>
+        function startSession(conceptId) {
+            fetch('/sessions', {
+                method: 'POST',
+                body: new URLSearchParams({concept_id: conceptId})
+            }).then(r => r.json()).then(data => {
+                alert('Session started: ' + data.session_id);
+                window.location.href = '/session/' + data.session_id;
+            });
+        }
+        function viewSession(sessionId) {
+            window.location.href = '/session/' + sessionId;
+        }
+    </script>
+</body>
+</html>

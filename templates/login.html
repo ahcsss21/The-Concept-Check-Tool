@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Concept Check - Login</title>
+    <style>
+        body { font-family: Arial; max-width: 500px; margin: 50px auto; padding: 20px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; }
+        .message { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Concept Check</h1>
+    <p>Enter your email to receive a magic link</p>
+    {% if message %}
+    <p class="message">{{ message }}</p>
+    {% endif %}
+    <form action="/request-magic-link" method="post">
+        <input name="email" type="email" placeholder="Email" required>
+        <input name="name" type="text" placeholder="Name" required>
+        <button type="submit">Get Magic Link</button>
+    </form>
+</body>
+</html>

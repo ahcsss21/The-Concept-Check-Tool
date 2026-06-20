@@ -1,0 +1,31 @@
+# Secrets
+.env
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Local databases and state
+*.db
+*.sqlite
+*.sqlite3
+concept_check.db
+
+# Logs and temp
+*.log
+*.tmp
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/

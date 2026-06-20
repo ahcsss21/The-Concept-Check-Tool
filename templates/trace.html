@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Session Trace</title>
+    <style>
+        body { font-family: Arial, max-width: 800px; margin: 20px auto; padding: 20px; }
+        .panel { border: 1px solid #ddd; padding: 18px; margin-bottom: 16px; background: #f9f9f9; }
+        pre { white-space: pre-wrap; word-wrap: break-word; font-family: inherit; }
+        .label { font-weight: bold; margin-bottom: 6px; display: block; }
+        .button { display: inline-block; padding: 10px 16px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Proof Trace for Session {{ session.session_id }}</h1>
+    <div class="panel">
+        <span class="label">Attempt 1 (before retry)</span>
+        <pre>{{ trace.attempt_1_before_retry or 'No first attempt available.' }}</pre>
+    </div>
+    <div class="panel">
+        <span class="label">Gap sentence identified</span>
+        <p>{{ trace.gap_sentence_identified or 'No gap identified.' }}</p>
+    </div>
+    <div class="panel">
+        <span class="label">Follow-up question</span>
+        <p>{{ trace.follow_up_question or 'No follow-up generated.' }}</p>
+    </div>
+    <div class="panel">
+        <span class="label">Attempt 2 (after retry)</span>
+        <pre>{{ trace.attempt_2_after_retry or 'No second attempt available.' }}</pre>
+    </div>
+    <div class="panel">
+        <span class="label">Critical proof</span>
+        <p>{{ trace.critical_proof }}</p>
+    </div>
+    <a class="button" href="/session/{{ session.session_id }}">Back to Session</a>
+</body>
+</html>

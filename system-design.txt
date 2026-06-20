@@ -1,0 +1,14 @@
+Draw by hand: Two boxes stacked vertically
+
+DETERMINISTIC BOX (top):
+- Fixed concept list (6 seeded concepts)
+- Session creation auto-timestamps
+- Storage schema rules
+- Checklist rules (key terms/causal chain/example) - APPLIED AFTER human review
+- Audit trail linking
+
+PROBABILISTIC BOX (bottom):
+- Gap detection (find sentence where it's not their words)
+- Follow-up question generation
+- ◯ CIRCLED HUMAN JUDGE ◯
+- FAILURE MODE: "Human may miss subtle mimicry, falsing gap closed when learner just reorganized memorized fragments"

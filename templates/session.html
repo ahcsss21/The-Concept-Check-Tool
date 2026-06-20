@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Concept Check - Session</title>
+    <style>
+        body { font-family: Arial, max-width: 900px; margin: 20px auto; padding: 20px; }
+        h1, h2, h3 { margin-top: 0; }
+        textarea { width: 100%; height: 140px; margin: 10px 0; padding: 10px; font-size: 14px; }
+        input[type=text], select { width: 100%; padding: 10px; margin: 10px 0; }
+        button, .button { display: inline-block; margin-top: 10px; padding: 10px 16px; background: #007bff; color: white; border: none; text-decoration: none; cursor: pointer; }
+        .section { margin-top: 30px; padding: 18px; border: 1px solid #ddd; border-radius: 6px; background: #f9f9f9; }
+        .entry { margin-top: 15px; padding: 14px; border: 1px solid #e0e0e0; background: white; }
+        pre { white-space: pre-wrap; word-wrap: break-word; font-family: inherit; font-size: 14px; }
+        label { font-weight: bold; display: block; margin-top: 12px; }
+        .meta { color: #555; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Session {{ session.session_id }}</h1>
+    <p class="meta"><strong>Concept:</strong> {{ concept.topic_name }} — {{ concept.description }}</p>
+    <p class="meta"><strong>Started:</strong> {{ session.started_at }} {% if session.completed_at %}| <strong>Completed:</strong> {{ session.completed_at }}{% endif %}</p>
+
+    {% if not attempt1 %}
+    <div class="section">
+        <h2>First Explanation</h2>
+        <p>Write your first attempt to explain the concept. Focus on your own words and the key causal steps.</p>
+        <form action="/session/{{ session.session_id }}/submit-explanation" method="post">
+            <input type="hidden" name="attempt_number" value="1">
+            <textarea name="raw_text" required></textarea>
+            <button type="submit">Submit Attempt 1</button>
+        </form>
+    </div>
+    {% else %}
+    <div class="section">
+        <h2>Attempt 1</h2>
+        <pre>{{ attempt1.raw_text }}</pre>
+        {% if attempt1.gap_sentence %}
+        <p><strong>Gap sentence identified:</strong> {{ attempt1.gap_sentence }}</p>
+        {% endif %}
+    </div>
+
+    {% if not followup %}
+    <div class="section">
+        <h2>Identify a gap</h2>
+        <p>Point to one sentence or idea in your first attempt that still feels uncertain. Then tell the system what gap the follow-up question should focus on.</p>
+        <form action="/session/{{ session.session_id }}/submit-followup" method="post">
+            <label for="gap_sentence">Gap sentence or unclear phrase</label>
+            <textarea id="gap_sentence" name="gap_sentence" required></textarea>
+            <label for="gap_identified">What should the follow-up question target?</label>
+            <input id="gap_identified" type="text" name="gap_identified" required>
+            <button type="submit">Generate Follow-up Question</button>
+        </form>
+    </div>
+    {% else %}
+    <div class="section">
+        <h2>Follow-up Question</h2>
+        <p>{{ followup.generated_question }}</p>
+        <p><strong>Gap identified:</strong> {{ followup.gap_identified }}</p>
+    </div>
+
+    {% if not attempt2 %}
+    <div class="section">
+        <h2>Second Explanation</h2>
+        <p>Answer the follow-up question with a concrete, causal explanation. Be explicit and avoid vague abstractions.</p>
+        <form action="/session/{{ session.session_id }}/submit-explanation" method="post">
+            <input type="hidden" name="attempt_number" value="2">
+            <input type="hidden" name="prompted_by_question_id" value="{{ followup.question_id }}">
+            <textarea name="raw_text" required></textarea>
+            <button type="submit">Submit Attempt 2</button>
+        </form>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    {% if attempt2 %}
+    <div class="section">
+        <h2>Attempt 2</h2>
+        <pre>{{ attempt2.raw_text }}</pre>
+        <p><strong>Prompted by question:</strong> {{ attempt2.prompted_by_question_id }}</p>
+    </div>
+
+    <div class="section">
+        <h2>Auto-checklist</h2>
+        {% if checklist %}
+            <p><strong>Passed:</strong> {{ 'Yes' if checklist.passed else 'No' }}</p>
+            <ul>
+                <li>API / Interface mention: {{ 'Yes' if checklist.api_key_mention else 'No' }}</li>
+                <li>Causal reasoning: {{ 'Yes' if checklist.causal_reasoning else 'No' }}</li>
+                <li>Concrete example: {{ 'Yes' if checklist.concrete_example else 'No' }}</li>
+            </ul>
+        {% else %}
+            <form action="/session/{{ session.session_id }}/run-checklist" method="post">
+                <button type="submit">Run Checklist</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <div class="section">
+        <h2>Human judgment</h2>
+        {% if judgment %}
+            <p><strong>{{ judgment.reviewer_name }}</strong> marked gap closed: <strong>{{ 'Yes' if judgment.gap_closed else 'No' }}</strong></p>
+            {% if judgment.override_reason %}
+            <p><strong>Override reason:</strong> {{ judgment.override_reason }}</p>
+            {% endif %}
+        {% else %}
+            <form action="/session/{{ session.session_id }}/submit-judgment" method="post">
+                <label for="reviewer_name">Reviewer name</label>
+                <input id="reviewer_name" name="reviewer_name" type="text" required>
+                <label for="gap_closed">Gap closed?</label>
+                <select id="gap_closed" name="gap_closed">
+                    <option value="true">Yes</option>
+                    <option value="false" selected>No</option>
+                </select>
+                <label for="override_reason">Override reason (optional)</label>
+                <textarea id="override_reason" name="override_reason"></textarea>
+                <button type="submit">Submit Judgment</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <div class="section">
+        <a class="button" href="/session/{{ session.session_id }}/trace">View Proof Trace</a>
+        <a class="button" href="/dashboard">Back to Dashboard</a>
+    </div>
+    {% endif %}
+    {% endif %}
+</body>
+</html>
