@@ -17,7 +17,7 @@ export default function SignUp({ onSignUp }) {
     try {
       const user = await signup({ name, email, password });
       onSignUp(user);
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {

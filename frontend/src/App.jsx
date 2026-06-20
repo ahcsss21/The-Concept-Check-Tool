@@ -28,7 +28,7 @@ function App() {
   const handleLogout = async () => {
     await logout();
     setUser(null);
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   if (loading) {
@@ -55,12 +55,12 @@ function App() {
 
       <main>
         <Routes>
-          <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Navigate to="/login" />} />
-          <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login onLogin={setUser} />} />
-          <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <SignUp onSignUp={setUser} />} />
-          <Route path="/dashboard" element={user ? <Dashboard user={user} /> : <Navigate to="/login" />} />
-          <Route path="/session/:sessionId" element={user ? <SessionPage user={user} /> : <Navigate to="/login" />} />
-          <Route path="*" element={<Navigate to="/" />} />
+          <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
+          <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login onLogin={setUser} />} />
+          <Route path="/signup" element={user ? <Navigate to="/dashboard" replace /> : <SignUp onSignUp={setUser} />} />
+          <Route path="/dashboard" element={user ? <Dashboard user={user} /> : <Navigate to="/login" replace />} />
+          <Route path="/session/:sessionId" element={user ? <SessionPage user={user} /> : <Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>

@@ -16,7 +16,7 @@ export default function Login({ onLogin }) {
     try {
       const user = await login({ email, password });
       onLogin(user);
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
