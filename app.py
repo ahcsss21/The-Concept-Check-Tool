@@ -456,7 +456,13 @@ def login(request: LoginRequest, db = Depends(get_db)):
 @app.post("/logout", tags=["auth"])
 def logout():
     response = JSONResponse(content={"message": "logged out"})
-    response.delete_cookie("auth_token")
+    response.delete_cookie(
+        "auth_token",
+        httponly=True,
+        samesite="none" if IS_PRODUCTION else "lax",
+        secure=IS_PRODUCTION,
+        path="/",
+    )
     return response
 
 
