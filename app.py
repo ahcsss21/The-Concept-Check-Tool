@@ -167,11 +167,123 @@ def generate_followup_question(raw_text: str, concept_name: str) -> Optional[dic
     )
     user_content = f"Concept: {concept_name}\nLearner explanation:\n{raw_text}"
 
+    def extract_memorized_phrase(text: str) -> Optional[str]:
+        stripped = text.strip()
+        if not stripped:
+            return None
+        # Prefer the first sentence because vague answers are usually short label statements.
+        first_sentence = re.split(r"[.?!]", stripped)[0].strip()
+        return first_sentence or stripped[:200]
+
+    def appears_conceptually_weak(text: str) -> bool:
+        stripped = text.strip()
+        if not stripped:
+            return True
+
+        words = re.findall(r"\w+", stripped.lower())
+        word_count = len(words)
+        if word_count < 8:
+            return True
+
+        has_example = any(k in stripped.lower() for k in ["for example", "such as", "e.g.", "example"])
+        has_causal = any(k in stripped.lower() for k in ["because", "therefore", "so that", "as a result", "leads to", "why"])
+        has_mechanism = any(k in stripped.lower() for k in ["how", "step", "flow", "request", "response", "store", "retrieve", "query", "process"])
+
+        # Generic one-liners often look polished but lack mechanism depth.
+        generic_patterns = [
+            r"\bthey communicate through\b",
+            r"\bbridge between\b",
+            r"\bhelps systems\b",
+            r"\bcode\b",
+        ]
+        looks_generic = any(re.search(p, stripped.lower()) for p in generic_patterns)
+
+        if looks_generic and not has_mechanism:
+            return True
+        if not has_example and not has_causal and not has_mechanism:
+            return True
+        return False
+
+    def generate_question_for_phrase(phrase: str) -> Optional[str]:
+        if not GROQ_API_KEY and not OPENAI_API_KEY:
+            return None
+
+        question_prompt = (
+            "Write exactly one follow-up question. "
+            "The question must test understanding of the quoted weak phrase. "
+            "Do not ask generic concept overview questions. "
+            "Keep it short and specific."
+        )
+        question_user = (
+            f"Concept: {concept_name}\n"
+            f"Weak phrase from learner answer: \"{phrase}\"\n"
+            f"Learner full answer: {raw_text}"
+        )
+
+        if GROQ_API_KEY:
+            url = "https://api.groq.com/openai/v1/chat/completions"
+            headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
+            candidate_models = [GROQ_MODEL, "llama-3.1-8b-instant"]
+            seen = set()
+            for candidate in candidate_models:
+                if not candidate or candidate in seen:
+                    continue
+                seen.add(candidate)
+                try:
+                    payload = {
+                        "model": candidate,
+                        "messages": [
+                            {"role": "system", "content": question_prompt},
+                            {"role": "user", "content": question_user},
+                        ],
+                        "temperature": 0.0,
+                        "max_tokens": 120,
+                    }
+                    resp = requests.post(url, json=payload, headers=headers, timeout=30)
+                    resp.raise_for_status()
+                    data = resp.json()
+                    question = data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+                    if question:
+                        q_match = re.search(r"([^?]*\?)", question, re.DOTALL)
+                        return q_match.group(1).strip() if q_match else question
+                except Exception:
+                    continue
+
+        if OPENAI_API_KEY:
+            try:
+                messages = [
+                    {"role": "system", "content": question_prompt},
+                    {"role": "user", "content": question_user},
+                ]
+                response = openai.ChatCompletion.create(
+                    model=OPENAI_MODEL,
+                    messages=messages,
+                    temperature=0.0,
+                    max_tokens=120,
+                )
+                question = response.choices[0].message.content.strip()
+                if question:
+                    q_match = re.search(r"([^?]*\?)", question, re.DOTALL)
+                    return q_match.group(1).strip() if q_match else question
+            except Exception:
+                pass
+        return None
+
     def parse_response(output: str) -> Optional[dict]:
         if not output:
             return None
         normalized = output.strip()
         if re.match(r"^\s*NO_FOLLOWUP\b", normalized, re.IGNORECASE):
+            # Guardrail: if model says NO_FOLLOWUP but answer is clearly weak/vague,
+            # force a phrase-targeted follow-up to preserve the core product behavior.
+            if appears_conceptually_weak(raw_text):
+                phrase = extract_memorized_phrase(raw_text)
+                if phrase:
+                    generated = generate_question_for_phrase(phrase)
+                    return {
+                        "gap_sentence": phrase,
+                        "generated_question": generated or f"You wrote '{phrase}'. What exactly do you mean by that here, and can you show one concrete mechanism?",
+                    }
             return None
 
         gap_sentence = None
@@ -196,7 +308,15 @@ def generate_followup_question(raw_text: str, concept_name: str) -> Optional[dic
             gap_sentence = first_sentence or (raw_text.strip()[:200] if raw_text.strip() else None)
 
         if not generated_question:
-            return None
+            # If parser could not extract FOLLOWUP but text is weak, recover with phrase-targeted question.
+            if appears_conceptually_weak(raw_text):
+                phrase = gap_sentence or extract_memorized_phrase(raw_text)
+                if phrase:
+                    generated = generate_question_for_phrase(phrase)
+                    if generated:
+                        generated_question = generated
+            if not generated_question:
+                return None
 
         return {"gap_sentence": gap_sentence, "generated_question": generated_question}
 
@@ -242,7 +362,14 @@ def generate_followup_question(raw_text: str, concept_name: str) -> Optional[dic
         )
         return parse_response(response.choices[0].message.content.strip())
 
-    # If no model is available, do not create a synthetic template follow-up.
+    # If no model is available, still enforce core behavior for clearly weak answers.
+    if appears_conceptually_weak(raw_text):
+        phrase = extract_memorized_phrase(raw_text)
+        if phrase:
+            return {
+                "gap_sentence": phrase,
+                "generated_question": f"You wrote '{phrase}'. What exactly do you mean by that here, and can you explain one concrete step-by-step example?",
+            }
     return None
 
 
