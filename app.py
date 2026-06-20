@@ -34,6 +34,7 @@ GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4")
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
+IS_PRODUCTION = os.getenv("RENDER", "") == "true" or os.getenv("IS_PRODUCTION", "") == "true"
 REVIEWER_EMAILS = {
     email.strip().lower()
     for email in os.getenv("REVIEWER_EMAILS", "").split(",")
@@ -291,7 +292,13 @@ def signup(request: SignUpRequest, db = Depends(get_db)):
         "is_reviewer": is_reviewer_account(learner),
     }
     fastapi_response = JSONResponse(content=response)
-    fastapi_response.set_cookie("auth_token", auth_token, httponly=True, max_age=43200)
+    fastapi_response.set_cookie(
+        "auth_token", auth_token,
+        httponly=True,
+        max_age=43200,
+        samesite="none" if IS_PRODUCTION else "lax",
+        secure=IS_PRODUCTION,
+    )
     return fastapi_response
 
 
@@ -309,7 +316,13 @@ def login(request: LoginRequest, db = Depends(get_db)):
         "is_reviewer": is_reviewer_account(learner),
     }
     fastapi_response = JSONResponse(content=response)
-    fastapi_response.set_cookie("auth_token", auth_token, httponly=True, max_age=43200)
+    fastapi_response.set_cookie(
+        "auth_token", auth_token,
+        httponly=True,
+        max_age=43200,
+        samesite="none" if IS_PRODUCTION else "lax",
+        secure=IS_PRODUCTION,
+    )
     return fastapi_response
 
 
